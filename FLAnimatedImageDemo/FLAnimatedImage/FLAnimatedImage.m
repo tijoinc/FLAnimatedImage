@@ -273,6 +273,12 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
         // In any case, cap the optimal cache size at the frame count.
         _frameCacheSizeOptimal = MIN(_frameCacheSizeOptimal, self.frameCount);
         
+        // If we can't fit the whole thing in memory, max out at FLAnimatedImageFrameCacheSizeDefault
+        // No need to preload more than this
+        if (_frameCacheSizeOptimal != self.frameCount) {
+            _frameCacheSizeOptimal = MIN(_frameCacheSizeOptimal, FLAnimatedImageFrameCacheSizeDefault);
+        }
+        
         // There also must be at least one.
         _frameCacheSizeOptimal = MAX(_frameCacheSizeOptimal, 1);
         
