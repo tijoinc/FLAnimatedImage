@@ -138,6 +138,19 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
     return nil;
 }
 
+- (instancetype)initWithData:(NSData *)data
+{
+    self = [self initWithAnimatedGIFData:data];
+    return self;
+}
+
++ (instancetype)imageWithContentsOfFile:(NSString *)path
+{
+    NSData *data = [NSData dataWithContentsOfFile:path];
+    FLAnimatedImage *image = [[FLAnimatedImage alloc] initWithAnimatedGIFData:data];
+    return image;
+}
+
 
 - (instancetype)initWithAnimatedGIFData:(NSData *)data
 {

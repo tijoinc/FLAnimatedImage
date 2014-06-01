@@ -42,6 +42,11 @@
 // On success, returns a new `FLAnimatedImage` with all fields populated, on failure returns `nil` and an error will be logged.
 - (instancetype)initWithAnimatedGIFData:(NSData *)data;
 
+// Proxies to -initWithAnimatedGIFData:, mimics method signature for UIImage
+- (instancetype)initWithData:(NSData *)data;
+
++ (instancetype)imageWithContentsOfFile:(NSString *)path;
+
 @property (nonatomic, strong, readonly) NSData *data; // The data the receiver was initialized with; read-only
 
 #if DEBUG
