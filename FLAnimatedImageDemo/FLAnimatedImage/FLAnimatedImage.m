@@ -427,17 +427,6 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
 }
 
 
-+ (dispatch_queue_t)serialQueue
-{
-    static dispatch_queue_t serialQueue = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        serialQueue = dispatch_queue_create("com.flipboard.framecachingqueue", DISPATCH_QUEUE_SERIAL);
-    });
-    
-    return serialQueue;
-}
-
 + (CGSize)sizeForImage:(id)image
 {
     CGSize imageSize = CGSizeZero;
@@ -464,6 +453,17 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
 
 #pragma mark - Private Methods
 #pragma mark Frame Loading
+
++ (dispatch_queue_t)serialQueue
+{
+    static dispatch_queue_t serialQueue = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        serialQueue = dispatch_queue_create("com.flipboard.framecachingqueue", DISPATCH_QUEUE_SERIAL);
+    });
+    
+    return serialQueue;
+}
 
 - (UIImage *)predrawnImageAtIndex:(NSUInteger)index
 {
