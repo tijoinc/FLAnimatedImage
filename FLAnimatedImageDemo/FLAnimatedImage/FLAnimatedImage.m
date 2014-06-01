@@ -375,6 +375,7 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
     [self.requestedFrameIndexes addIndexes:frameIndexesToAddToCache];
     
     // Lazily create dedicated isolation queue.
+#warning this should be shared across all instances
     if (!_serialQueue) {
         _serialQueue = dispatch_queue_create("com.flipboard.framecachingqueue", DISPATCH_QUEUE_SERIAL);
     }
