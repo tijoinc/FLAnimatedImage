@@ -32,8 +32,6 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
 {
     // Use old school ivar instead of property for retained non-object types (CF type, dispatch "object") to avoid ARC confusion: http://stackoverflow.com/questions/9684972/strong-property-with-attribute-nsobject-for-a-cf-type-doesnt-retain/9690656#9690656
     CGImageSourceRef _imageSource;
-    // Note: Only if the deployment target is iOS 6.0 or higher, dispatch objects are declared as "true objects" and participate in ARC, etc.; See <os/object.h> or https://github.com/AFNetworking/AFNetworking/pull/517 for details.
-    dispatch_queue_t _serialQueue;
 }
 
 @property (nonatomic, assign, readonly) NSUInteger frameCacheSizeOptimal; // The optimal number of frames to cache based on image size & number of frames; never changes
@@ -374,14 +372,8 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
     // Add to the requested list before we actually kick them off, so they don't get into the queue twice.
     [self.requestedFrameIndexes addIndexes:frameIndexesToAddToCache];
     
-    // Lazily create dedicated isolation queue.
-#warning this should be shared across all instances
-    if (!_serialQueue) {
-        _serialQueue = dispatch_queue_create("com.flipboard.framecachingqueue", DISPATCH_QUEUE_SERIAL);
-    }
-    
     // Start streaming requested frames in the background into the cache.
-    dispatch_async(_serialQueue, ^{
+    dispatch_async([[self class] serialQueue], ^{
         // Produce and cache next needed frame.
         void (^frameRangeBlock)(NSRange, BOOL *) = ^(NSRange range, BOOL *stop) {
             // Iterate through contiguous indexes; can be faster than `enumerateIndexesInRange:options:usingBlock:`.
@@ -428,6 +420,17 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
     });
 }
 
+
++ (dispatch_queue_t)serialQueue
+{
+    static dispatch_queue_t serialQueue = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        serialQueue = dispatch_queue_create("com.flipboard.framecachingqueue", DISPATCH_QUEUE_SERIAL);
+    });
+    
+    return serialQueue;
+}
 
 + (CGSize)sizeForImage:(id)image
 {
