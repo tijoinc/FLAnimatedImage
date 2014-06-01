@@ -204,75 +204,56 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
         size_t imageCount = CGImageSourceGetCount(_imageSource);
         NSMutableArray *delayTimesMutable = [NSMutableArray arrayWithCapacity:imageCount];
         for (size_t i = 0; i < imageCount; i++) {
-            CGImageRef frameImageRef = CGImageSourceCreateImageAtIndex(_imageSource, i, NULL);
-            if (frameImageRef) {
+            if (!self.posterImage) {
+                CGImageRef frameImageRef = CGImageSourceCreateImageAtIndex(_imageSource, i, NULL);
                 UIImage *frameImage = [UIImage imageWithCGImage:frameImageRef];
-                // Check for valid `frameImage` before parsing its properties as frames can be corrupted (and `frameImage` even `nil` when `frameImageRef` was valid).
                 if (frameImage) {
-                    // Set poster image
-                    if (!self.posterImage) {
-                        _posterImage = frameImage;
-                        // Set its size to proxy our size.
-                        _size = _posterImage.size;
-                        // Remember index of poster image so we never purge it; also add it to the cache.
-                        _posterImageFrameIndex = i;
-                        self.cachedFrames[self.posterImageFrameIndex] = self.posterImage;
-                        [self.cachedFrameIndexes addIndex:self.posterImageFrameIndex];
-                    } else {
-                        // Placeholder indicates that we don't have a cached frame.
-                        // We use an array instead of a dictionary for slightly faster access.
-                        self.cachedFrames[i] = [NSNull null];
-                    }
-                    
-                    // Get `DelayTime`
-                    // Note: It's not in (1/100) of a second like still falsly described in the documentation as per iOS 7 but in seconds stored as `kCFNumberFloat32Type`.
-                    // Frame properties example:
-                    // {
-                    //     ColorModel = RGB;
-                    //     Depth = 8;
-                    //     PixelHeight = 960;
-                    //     PixelWidth = 640;
-                    //     "{GIF}" = {
-                    //         DelayTime = "0.4";
-                    //         UnclampedDelayTime = "0.4";
-                    //     };
-                    // }
-                    
-                    NSDictionary *frameProperties = (__bridge_transfer NSDictionary *)CGImageSourceCopyPropertiesAtIndex(_imageSource, i, NULL);
-                    NSDictionary *framePropertiesGIF = [frameProperties objectForKey:(id)kCGImagePropertyGIFDictionary];
-                    
-                    // Try to use the unclamped delay time; fall back to the normal delay time.
-                    NSNumber *delayTime = [framePropertiesGIF objectForKey:(id)kCGImagePropertyGIFUnclampedDelayTime];
-                    if (!delayTime) {
-                        delayTime = [framePropertiesGIF objectForKey:(id)kCGImagePropertyGIFDelayTime];
-                    }
-                    // If we don't get a delay time from the properties, fall back to `kDelayTimeIntervalDefault` or carry over the preceding frame's value.
-                    const NSTimeInterval kDelayTimeIntervalDefault = 0.1;
-                    if (!delayTime) {
-                        if (i == 0) {
-                            NSLog(@"Verbose: Falling back to default delay time for first frame %@ because none found in GIF properties %@", frameImage, frameProperties);
-                            delayTime = @(kDelayTimeIntervalDefault);
-                        } else {
-                            NSLog(@"Verbose: Falling back to preceding delay time for frame %zu %@ because none found in GIF properties %@", i, frameImage, frameProperties);
-                            delayTime = delayTimesMutable[i - 1];
-                        }
-                    }
-                    // Support frame delays as low as `kDelayTimeIntervalMinimum`, with anything below being rounded up to `kDelayTimeIntervalDefault` for legacy compatibility.
-                    // This is how the fastest browsers do it as per 2012: http://nullsleep.tumblr.com/post/16524517190/animated-gif-minimum-frame-delay-browser-compatibility
-                    const NSTimeInterval kDelayTimeIntervalMinimum = 0.02;
-                    // Use `[NSNumber compare:]` for comparison to let it decide how to deal with accurate float representation.
-                    if ([delayTime compare:@(kDelayTimeIntervalMinimum)] == NSOrderedAscending) {
-                        NSLog(@"Verbose: Rounding frame %zu's `delayTime` from %f up to default %f (minimum supported: %f).", i, [delayTime floatValue], kDelayTimeIntervalDefault, kDelayTimeIntervalMinimum);
-                        delayTime = @(kDelayTimeIntervalDefault);
-                    }
-                    delayTimesMutable[i] = delayTime;
+                    _posterImage = frameImage;
+                    // Set its size to proxy our size.
+                    _size = _posterImage.size;
+                    // Remember index of poster image so we never purge it; also add it to the cache.
+                    _posterImageFrameIndex = i;
+                    self.cachedFrames[self.posterImageFrameIndex] = self.posterImage;
+                    [self.cachedFrameIndexes addIndex:self.posterImageFrameIndex];
                 } else {
-                    NSLog(@"Verbose: Dropping frame %zu because valid `CGImageRef` %@ did result in `nil`-`UIImage`.", i, frameImageRef);
+                    // Placeholder indicates that we don't have a cached frame.
+                    // We use an array instead of a dictionary for slightly faster access.
+                    self.cachedFrames[i] = [NSNull null];
                 }
-                CFRelease(frameImageRef);
             } else {
-                NSLog(@"Verbose: Dropping frame %zu because failed to `CGImageSourceCreateImageAtIndex` with image source %@", i, _imageSource);
+                // Placeholder indicates that we don't have a cached frame.
+                // We use an array instead of a dictionary for slightly faster access.
+                self.cachedFrames[i] = [NSNull null];
             }
+            
+            NSDictionary *frameProperties = (__bridge_transfer NSDictionary *)CGImageSourceCopyPropertiesAtIndex(_imageSource, i, NULL);
+            NSDictionary *framePropertiesGIF = [frameProperties objectForKey:(id)kCGImagePropertyGIFDictionary];
+
+            // Try to use the unclamped delay time; fall back to the normal delay time.
+            NSNumber *delayTime = [framePropertiesGIF objectForKey:(id)kCGImagePropertyGIFUnclampedDelayTime];
+            if (!delayTime) {
+                delayTime = [framePropertiesGIF objectForKey:(id)kCGImagePropertyGIFDelayTime];
+            }
+            // If we don't get a delay time from the properties, fall back to `kDelayTimeIntervalDefault` or carry over the preceding frame's value.
+            const NSTimeInterval kDelayTimeIntervalDefault = 0.1;
+            if (!delayTime) {
+                if (i == 0) {
+                    NSLog(@"Verbose: Falling back to default delay time for first frame because none found in GIF properties %@", frameProperties);
+                    delayTime = @(kDelayTimeIntervalDefault);
+                } else {
+                    NSLog(@"Verbose: Falling back to preceding delay time for frame %zu because none found in GIF properties %@", i, frameProperties);
+                    delayTime = delayTimesMutable[i - 1];
+                }
+            }
+            // Support frame delays as low as `kDelayTimeIntervalMinimum`, with anything below being rounded up to `kDelayTimeIntervalDefault` for legacy compatibility.
+            // This is how the fastest browsers do it as per 2012: http://nullsleep.tumblr.com/post/16524517190/animated-gif-minimum-frame-delay-browser-compatibility
+            const NSTimeInterval kDelayTimeIntervalMinimum = 0.02;
+            // Use `[NSNumber compare:]` for comparison to let it decide how to deal with accurate float representation.
+            if ([delayTime compare:@(kDelayTimeIntervalMinimum)] == NSOrderedAscending) {
+                NSLog(@"Verbose: Rounding frame %zu's `delayTime` from %f up to default %f (minimum supported: %f).", i, [delayTime floatValue], kDelayTimeIntervalDefault, kDelayTimeIntervalMinimum);
+                delayTime = @(kDelayTimeIntervalDefault);
+            }
+            delayTimesMutable[i] = delayTime;
         }
         _delayTimes = [delayTimesMutable copy];
         _frameCount = [_delayTimes count];
