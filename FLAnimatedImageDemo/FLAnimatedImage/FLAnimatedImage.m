@@ -20,6 +20,8 @@
 // (Meaning if you had 100 FLAnimatedImages the sum of their memory footprints / preloaded frames should not exceed 10MB)
 const CGFloat kFLAnimatedImageIdealMemoryFootprint = 10.0;
 
+NSString *const kFLAnimatedImageLifeInstanceCountDidChange = @"FLAnimatedImageLifeInstanceCountDidChange";
+
 typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
     FLAnimatedImageFrameCacheSizeNoLimit = 0,                // 0 means no specific limit
     FLAnimatedImageFrameCacheSizeLowMemory = 1,              // The minimum frame cache size; this will produce frames on-demand.
@@ -265,22 +267,14 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
         } else {
             // We have multiple frames, rock on!
         }
+
+        // NOTE: This should be called before adding us as an observer of kFLAnimatedImageLifeInstanceCountDidChange
+        // Otherwise -computeFrameCacheSizeOptimal will be called twice in a row
+        // You could alternatively remove the call to -computeFrameCacheSizeOptimal here and move the call to -incrementLifeInstanceCount to after the add observer line
+        [[self class] incrementLifeInstanceCount];
+        [self computeFrameCacheSizeOptimal];
         
-        // Calculate the optimal frame cache size by fitting the most number of frames possible into the quota specified by kFLAnimatedImageIdealMemoryFootprint
-        CGFloat animatedImageFrameSize = CGImageGetBytesPerRow(self.posterImage.CGImage) * self.size.height / MEGABYTE;
-        _frameCacheSizeOptimal = floor(kFLAnimatedImageIdealMemoryFootprint / animatedImageFrameSize);
-        
-        // In any case, cap the optimal cache size at the frame count.
-        _frameCacheSizeOptimal = MIN(_frameCacheSizeOptimal, self.frameCount);
-        
-        // If we can't fit the whole thing in memory, max out at FLAnimatedImageFrameCacheSizeDefault
-        // No need to preload more than this
-        if (_frameCacheSizeOptimal != self.frameCount) {
-            _frameCacheSizeOptimal = MIN(_frameCacheSizeOptimal, FLAnimatedImageFrameCacheSizeDefault);
-        }
-        
-        // There also must be at least one.
-        _frameCacheSizeOptimal = MAX(_frameCacheSizeOptimal, 1);
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(liveInstanceCountDidChange:) name:kFLAnimatedImageLifeInstanceCountDidChange object:nil];
         
         // Convenience/minor performance optimization; keep an index set handy with the full range to return in `-frameIndexesToCache`.
         _allFramesIndexSet = [[NSIndexSet alloc] initWithIndexesInRange:NSMakeRange(0, self.frameCount)];
@@ -295,6 +289,10 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+    
+    // NOTE: It's important that -decrementLiveInstanceCount is called after this instance is removed from NSNotificationCenter observing
+    // Otherwise -computeFrameCacheSizeOptimal while we're dealloc-ing
+    [[self class] decrementLiveInstanceCount];
     
     if (_weakProxy) {
         [NSObject cancelPreviousPerformRequestsWithTarget:_weakProxy];
@@ -481,6 +479,27 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
 
 #pragma mark Frame Caching
 
+- (void)computeFrameCacheSizeOptimal
+{
+    // Calculate the optimal frame cache size by fitting the most number of frames possible into the quota specified by kFLAnimatedImageIdealMemoryFootprint
+    CGFloat animatedImageFrameSize = CGImageGetBytesPerRow(self.posterImage.CGImage) * self.size.height / MEGABYTE;
+    CGFloat instanceFootprint = kFLAnimatedImageIdealMemoryFootprint / [[self class] liveInstanceCount];
+    _frameCacheSizeOptimal = floor(instanceFootprint / animatedImageFrameSize);
+    
+    // In any case, cap the optimal cache size at the frame count.
+    _frameCacheSizeOptimal = MIN(_frameCacheSizeOptimal, self.frameCount);
+    
+    // If we can't fit the whole thing in memory, max out at FLAnimatedImageFrameCacheSizeDefault
+    // No need to preload more than this
+    if (_frameCacheSizeOptimal != self.frameCount) {
+        _frameCacheSizeOptimal = MIN(_frameCacheSizeOptimal, FLAnimatedImageFrameCacheSizeDefault);
+    }
+    
+    // There also must be at least one.
+    _frameCacheSizeOptimal = MAX(_frameCacheSizeOptimal, 1);
+}
+
+
 - (NSIndexSet *)frameIndexesToCache
 {
     NSIndexSet *indexesToCache = nil;
@@ -558,6 +577,31 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
     NSLog(@"Verbose: Reset frame cache size max (current frame cache size: %lu) for animated image: %@", (unsigned long)self.frameCacheSizeCurrent, self);
 }
 
+static NSUInteger _liveInstanceCount = 0;
+
++ (NSUInteger)liveInstanceCount
+{
+    return _liveInstanceCount;
+}
+
++ (void)incrementLifeInstanceCount
+{
+    _liveInstanceCount++;
+    [[NSNotificationCenter defaultCenter] postNotificationName:kFLAnimatedImageLifeInstanceCountDidChange object:nil userInfo:nil];
+}
+
++ (void)decrementLiveInstanceCount
+{
+    _liveInstanceCount--;
+    [[NSNotificationCenter defaultCenter] postNotificationName:kFLAnimatedImageLifeInstanceCountDidChange object:nil userInfo:nil];
+}
+
+#pragma mark FLAnimatedImage Notification Handler
+
+- (void)liveInstanceCountDidChange:(NSNotification *)notification
+{
+    [self computeFrameCacheSizeOptimal];
+}
 
 #pragma mark System Memory Warnings Notification Handler
 
