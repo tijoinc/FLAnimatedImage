@@ -178,18 +178,23 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
             return nil;
         }
         
-        // Get `LoopCount`
-        // Note: 0 means repeating the animation indefinitely.
-        // Image properties example:
-        // {
-        //     FileSize = 314446;
-        //     "{GIF}" = {
-        //         HasGlobalColorMap = 1;
-        //         LoopCount = 0;
-        //     };
-        // }
-        NSDictionary *imageProperties = (__bridge_transfer NSDictionary *)CGImageSourceCopyProperties(_imageSource, NULL);
-        _loopCount = [[[imageProperties objectForKey:(id)kCGImagePropertyGIFDictionary] objectForKey:(id)kCGImagePropertyGIFLoopCount] unsignedIntegerValue];
+        // This is done off the main thread because it can be very slow for large GIFs
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
+            // Get `LoopCount`
+            // Note: 0 means repeating the animation indefinitely.
+            // Image properties example:
+            // {
+            //     FileSize = 314446;
+            //     "{GIF}" = {
+            //         HasGlobalColorMap = 1;
+            //         LoopCount = 0;
+            //     };
+            // }
+            
+            NSDictionary *imageProperties = (__bridge_transfer NSDictionary *)CGImageSourceCopyProperties(_imageSource, NULL);
+            _loopCount = [[[imageProperties objectForKey:(id)kCGImagePropertyGIFDictionary] objectForKey:(id)kCGImagePropertyGIFLoopCount] unsignedIntegerValue];
+            _loopCountComputed = YES;
+        });
         
         // Iterate through frame images
         size_t imageCount = CGImageSourceGetCount(_imageSource);
@@ -269,11 +274,11 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
         _frameCount = [_delayTimes count];
         
         if (self.frameCount == 0) {
-            NSLog(@"Error: Failed to create any valid frames for GIF with properties %@", imageProperties);
+            NSLog(@"Error: Failed to create any valid frames for GIF with properties");
             return nil;
         } else if (self.frameCount == 1) {
             // Warn when we only have a single frame but return a valid GIF.
-            NSLog(@"Verbose: Created valid GIF but with only a single frame. Image properties: %@", imageProperties);
+            NSLog(@"Verbose: Created valid GIF but with only a single frame.");
         } else {
             // We have multiple frames, rock on!
         }
