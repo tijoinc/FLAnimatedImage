@@ -24,6 +24,7 @@
 @property (nonatomic, assign, readonly) CGSize size; // The `.posterImage`'s `.size`
 
 @property (nonatomic, assign, readonly) NSUInteger loopCount; // 0 means repeating the animation indefinitely
+@property (assign, readonly, getter = isLoopCountComputed) BOOL loopCountComputed;
 @property (nonatomic, strong, readonly) NSArray *delayTimes; // Of type `NSTimeInterval` boxed in `NSNumber`s
 @property (nonatomic, assign, readonly) NSUInteger frameCount; // Number of valid frames; equal to `[.delayTimes count]`
 

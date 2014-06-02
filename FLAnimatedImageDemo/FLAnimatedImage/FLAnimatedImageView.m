@@ -231,12 +231,17 @@
             self.currentFrameIndex++;
             if (self.currentFrameIndex >= self.animatedImage.frameCount) {
                 // If we've looped the number of times that this animated image describes, stop looping.
-                self.loopCountdown--;
-                if (self.loopCountdown == 0) {
-                    [self stopAnimating];
-                    return;
+                if (self.animatedImage.isLoopCountComputed) {
+                    self.loopCountdown--;
+                    if (self.loopCountdown == 0) {
+                        [self stopAnimating];
+                        return;
+                    }
+                    self.currentFrameIndex = 0;
+                } else {
+                    // Pause at the final frame until the loop count is computed
+                    self.currentFrameIndex--;
                 }
-                self.currentFrameIndex = 0;
             }
             // Calling `-setNeedsDisplay` will just paint the current frame, not the new frame that we may have moved to.
             // Instead, set `needsDisplayWhenImageBecomesAvailable` to `YES` -- this will paint the new image once loaded.
