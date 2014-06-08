@@ -8,6 +8,7 @@
 
 
 #import <Foundation/Foundation.h>
+#import <ImageIO/ImageIO.h>
 
 @protocol FLAnimatedImageDebugDelegate;
 
@@ -40,15 +41,13 @@
 + (CGSize)sizeForImage:(id)image;
 
 // Designated initializer
-// On success, returns a new `FLAnimatedImage` with all fields populated, on failure returns `nil` and an error will be logged.
-- (instancetype)initWithAnimatedGIFData:(NSData *)data;
+- (instancetype)initWithCGImageSource:(CGImageSourceRef)imageSource;
 
 // Proxies to -initWithAnimatedGIFData:, mimics method signature for UIImage
 - (instancetype)initWithData:(NSData *)data;
+- (instancetype)initWithAnimatedGIFData:(NSData *)data;
 
 + (instancetype)imageWithContentsOfFile:(NSString *)path;
-
-@property (nonatomic, strong, readonly) NSData *data; // The data the receiver was initialized with; read-only
 
 #if DEBUG
 // Only intended to report internal state for debugging

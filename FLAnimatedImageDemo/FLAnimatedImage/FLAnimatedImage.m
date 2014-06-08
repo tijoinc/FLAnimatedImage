@@ -144,30 +144,26 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
     return self;
 }
 
+- (instancetype)initWithAnimatedGIFData:(NSData *)data
+{
+    CGImageSourceRef imageSource = CGImageSourceCreateWithData((__bridge CFDataRef)data, NULL);
+    self = [self initWithCGImageSource:imageSource];
+    return self;
+}
+
 + (instancetype)imageWithContentsOfFile:(NSString *)path
 {
-    NSData *data = [NSData dataWithContentsOfFile:path];
-    FLAnimatedImage *image = [[FLAnimatedImage alloc] initWithAnimatedGIFData:data];
-    return image;
+    CGImageSourceRef imageSource = CGImageSourceCreateWithURL((__bridge CFURLRef)[NSURL fileURLWithPath:path], NULL);
+    return [[self alloc] initWithCGImageSource:imageSource];
 }
 
 
-- (instancetype)initWithAnimatedGIFData:(NSData *)data
+- (instancetype)initWithCGImageSource:(CGImageSourceRef)imageSource
 {
-    // Early return if no data supplied!
-    BOOL hasData = ([data length] > 0);
-    if (!hasData) {
-        NSLog(@"Error: No animated GIF data supplied.");
-        return nil;
-    }
     
     self = [super init];
     if (self) {
         // Do one-time initializations of `readonly` properties directly to ivar to prevent implicit actions and avoid need for private `readwrite` property overrides.
-        
-        // Keep a strong reference to `data` and expose it read-only publicly.
-        // However, we will use the `_imageSource` as handler to the image data throughout our life cycle.
-        _data = data;
         
         // Initialize internal data structures
         // We'll fill in the initial `NSNull` values below, when we loop through all frames.
@@ -176,22 +172,17 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
         _requestedFrameIndexes = [[NSMutableIndexSet alloc] init];
 
         // Note: We could leverage `CGImageSourceCreateWithURL` too to add a second initializer `-initWithAnimatedGIFContentsOfURL:`.
-        _imageSource = CGImageSourceCreateWithData((__bridge CFDataRef)data, NULL);
-        // Early return on failure!
-        if (!_imageSource) {
-            NSLog(@"Error: Failed to `CGImageSourceCreateWithData` for animated GIF data %@", data);
-            return nil;
-        }
+        _imageSource = imageSource;
         
         // Early return if not GIF!
         CFStringRef imageSourceContainerType = CGImageSourceGetType(_imageSource);
         BOOL isGIFData = UTTypeConformsTo(imageSourceContainerType, kUTTypeGIF);
         if (!isGIFData) {
-            NSLog(@"Error: Supplied data is of type %@ and doesn't seem to be GIF data %@", imageSourceContainerType, data);
+            NSLog(@"Error: Supplied data is of type %@ and doesn't seem to be GIF data", imageSourceContainerType);
             return nil;
         }
         
-        _posterImage = [UIImage imageWithData:data];
+        _posterImage = [UIImage imageWithCGImage:CGImageSourceCreateImageAtIndex(_imageSource, 0, NULL)];
         _posterImageFrameIndex = 0;
         [_cachedFrameIndexes addIndex:_posterImageFrameIndex];
         [_cachedFrames addObject:_posterImage];
