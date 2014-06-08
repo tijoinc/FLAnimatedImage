@@ -199,7 +199,7 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
         _posterImageFrameIndex = 0;
         _frameCount = 0;
 
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             // Iterate through frame images
             size_t imageCount = CGImageSourceGetCount(_imageSource);
             NSMutableArray *delayTimesMutable = [NSMutableArray arrayWithCapacity:imageCount];
@@ -240,7 +240,7 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
         });
         
         // This is done off the main thread because it can be very slow for large GIFs
-        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             // Get `LoopCount`
             // Note: 0 means repeating the animation indefinitely.
             // Image properties example:
