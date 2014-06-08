@@ -12,6 +12,10 @@
 #import <MobileCoreServices/MobileCoreServices.h>
 #import <CoreGraphics/CoreGraphics.h>
 
+void measure(dispatch_block_t block)
+{
+}
+
 
 #define MEGABYTE (1024 * 1024)
 
@@ -187,6 +191,54 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
             return nil;
         }
         
+        _posterImage = [UIImage imageWithData:data];
+        _posterImageFrameIndex = 0;
+        [_cachedFrameIndexes addIndex:_posterImageFrameIndex];
+        [_cachedFrames addObject:_posterImage];
+        _size = _posterImage.size;
+        _posterImageFrameIndex = 0;
+        _frameCount = 0;
+
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
+            // Iterate through frame images
+            size_t imageCount = CGImageSourceGetCount(_imageSource);
+            NSMutableArray *delayTimesMutable = [NSMutableArray arrayWithCapacity:imageCount];
+            for (size_t i = 0; i < imageCount; i++) {
+                [self.cachedFrames addObject:[NSNull null]];
+                
+                NSDictionary *frameProperties = (__bridge_transfer NSDictionary *)CGImageSourceCopyPropertiesAtIndex(_imageSource, i, NULL);
+                NSDictionary *framePropertiesGIF = [frameProperties objectForKey:(id)kCGImagePropertyGIFDictionary];
+                
+                // Try to use the unclamped delay time; fall back to the normal delay time.
+                NSNumber *delayTime = [framePropertiesGIF objectForKey:(id)kCGImagePropertyGIFUnclampedDelayTime];
+                if (!delayTime) {
+                    delayTime = [framePropertiesGIF objectForKey:(id)kCGImagePropertyGIFDelayTime];
+                }
+                // If we don't get a delay time from the properties, fall back to `kDelayTimeIntervalDefault` or carry over the preceding frame's value.
+                const NSTimeInterval kDelayTimeIntervalDefault = 0.1;
+                if (!delayTime) {
+                    if (i == 0) {
+                        NSLog(@"Verbose: Falling back to default delay time for first frame because none found in GIF properties %@", frameProperties);
+                        delayTime = @(kDelayTimeIntervalDefault);
+                    } else {
+                        NSLog(@"Verbose: Falling back to preceding delay time for frame %zu because none found in GIF properties %@", i, frameProperties);
+                        delayTime = delayTimesMutable[i - 1];
+                    }
+                }
+                // Support frame delays as low as `kDelayTimeIntervalMinimum`, with anything below being rounded up to `kDelayTimeIntervalDefault` for legacy compatibility.
+                // This is how the fastest browsers do it as per 2012: http://nullsleep.tumblr.com/post/16524517190/animated-gif-minimum-frame-delay-browser-compatibility
+                const NSTimeInterval kDelayTimeIntervalMinimum = 0.02;
+                // Use `[NSNumber compare:]` for comparison to let it decide how to deal with accurate float representation.
+                if ([delayTime compare:@(kDelayTimeIntervalMinimum)] == NSOrderedAscending) {
+                    NSLog(@"Verbose: Rounding frame %zu's `delayTime` from %f up to default %f (minimum supported: %f).", i, [delayTime floatValue], kDelayTimeIntervalDefault, kDelayTimeIntervalMinimum);
+                    delayTime = @(kDelayTimeIntervalDefault);
+                }
+                delayTimesMutable[i] = delayTime;
+            }
+            _delayTimes = [delayTimesMutable copy];
+            _frameCount = [_delayTimes count];
+        });
+        
         // This is done off the main thread because it can be very slow for large GIFs
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0), ^{
             // Get `LoopCount`
@@ -204,74 +256,6 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
             _loopCount = [[[imageProperties objectForKey:(id)kCGImagePropertyGIFDictionary] objectForKey:(id)kCGImagePropertyGIFLoopCount] unsignedIntegerValue];
             _loopCountComputed = YES;
         });
-        
-        // Iterate through frame images
-        size_t imageCount = CGImageSourceGetCount(_imageSource);
-        NSMutableArray *delayTimesMutable = [NSMutableArray arrayWithCapacity:imageCount];
-        for (size_t i = 0; i < imageCount; i++) {
-            if (!self.posterImage) {
-                CGImageRef frameImageRef = CGImageSourceCreateImageAtIndex(_imageSource, i, NULL);
-                UIImage *frameImage = [UIImage imageWithCGImage:frameImageRef];
-                if (frameImage) {
-                    _posterImage = frameImage;
-                    // Set its size to proxy our size.
-                    _size = _posterImage.size;
-                    // Remember index of poster image so we never purge it; also add it to the cache.
-                    _posterImageFrameIndex = i;
-                    self.cachedFrames[self.posterImageFrameIndex] = self.posterImage;
-                    [self.cachedFrameIndexes addIndex:self.posterImageFrameIndex];
-                } else {
-                    // Placeholder indicates that we don't have a cached frame.
-                    // We use an array instead of a dictionary for slightly faster access.
-                    self.cachedFrames[i] = [NSNull null];
-                }
-            } else {
-                // Placeholder indicates that we don't have a cached frame.
-                // We use an array instead of a dictionary for slightly faster access.
-                self.cachedFrames[i] = [NSNull null];
-            }
-            
-            NSDictionary *frameProperties = (__bridge_transfer NSDictionary *)CGImageSourceCopyPropertiesAtIndex(_imageSource, i, NULL);
-            NSDictionary *framePropertiesGIF = [frameProperties objectForKey:(id)kCGImagePropertyGIFDictionary];
-
-            // Try to use the unclamped delay time; fall back to the normal delay time.
-            NSNumber *delayTime = [framePropertiesGIF objectForKey:(id)kCGImagePropertyGIFUnclampedDelayTime];
-            if (!delayTime) {
-                delayTime = [framePropertiesGIF objectForKey:(id)kCGImagePropertyGIFDelayTime];
-            }
-            // If we don't get a delay time from the properties, fall back to `kDelayTimeIntervalDefault` or carry over the preceding frame's value.
-            const NSTimeInterval kDelayTimeIntervalDefault = 0.1;
-            if (!delayTime) {
-                if (i == 0) {
-                    NSLog(@"Verbose: Falling back to default delay time for first frame because none found in GIF properties %@", frameProperties);
-                    delayTime = @(kDelayTimeIntervalDefault);
-                } else {
-                    NSLog(@"Verbose: Falling back to preceding delay time for frame %zu because none found in GIF properties %@", i, frameProperties);
-                    delayTime = delayTimesMutable[i - 1];
-                }
-            }
-            // Support frame delays as low as `kDelayTimeIntervalMinimum`, with anything below being rounded up to `kDelayTimeIntervalDefault` for legacy compatibility.
-            // This is how the fastest browsers do it as per 2012: http://nullsleep.tumblr.com/post/16524517190/animated-gif-minimum-frame-delay-browser-compatibility
-            const NSTimeInterval kDelayTimeIntervalMinimum = 0.02;
-            // Use `[NSNumber compare:]` for comparison to let it decide how to deal with accurate float representation.
-            if ([delayTime compare:@(kDelayTimeIntervalMinimum)] == NSOrderedAscending) {
-                NSLog(@"Verbose: Rounding frame %zu's `delayTime` from %f up to default %f (minimum supported: %f).", i, [delayTime floatValue], kDelayTimeIntervalDefault, kDelayTimeIntervalMinimum);
-                delayTime = @(kDelayTimeIntervalDefault);
-            }
-            delayTimesMutable[i] = delayTime;
-        }
-        _delayTimes = [delayTimesMutable copy];
-        _frameCount = [_delayTimes count];
-        
-        if (self.frameCount == 0) {
-            NSLog(@"Error: Failed to create any valid frames for GIF with properties");
-            return nil;
-        } else if (self.frameCount == 1) {
-            // Warn when we only have a single frame but return a valid GIF.
-            NSLog(@"Verbose: Created valid GIF but with only a single frame.");
-        } else {
-            // We have multiple frames, rock on!
-        }
 
         // NOTE: This should be called before adding us as an observer of kFLAnimatedImageLiveInstanceCountDidChange
         // Otherwise -computeFrameCacheSizeOptimal will be called twice in a row
