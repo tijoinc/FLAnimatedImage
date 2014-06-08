@@ -20,7 +20,7 @@
 // (Meaning if you had 100 FLAnimatedImages the sum of their memory footprints / preloaded frames should not exceed 10MB)
 const CGFloat kFLAnimatedImageIdealMemoryFootprint = 10.0;
 
-NSString *const kFLAnimatedImageLifeInstanceCountDidChange = @"FLAnimatedImageLifeInstanceCountDidChange";
+NSString *const kFLAnimatedImageLiveInstanceCountDidChange = @"FLAnimatedImageLiveInstanceCountDidChange";
 
 typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
     FLAnimatedImageFrameCacheSizeNoLimit = 0,                // 0 means no specific limit
@@ -273,13 +273,13 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
             // We have multiple frames, rock on!
         }
 
-        // NOTE: This should be called before adding us as an observer of kFLAnimatedImageLifeInstanceCountDidChange
+        // NOTE: This should be called before adding us as an observer of kFLAnimatedImageLiveInstanceCountDidChange
         // Otherwise -computeFrameCacheSizeOptimal will be called twice in a row
-        // You could alternatively remove the call to -computeFrameCacheSizeOptimal here and move the call to -incrementLifeInstanceCount to after the add observer line
-        [[self class] incrementLifeInstanceCount];
+        // You could alternatively remove the call to -computeFrameCacheSizeOptimal here and move the call to -incrementLiveInstanceCount to after the add observer line
+        [[self class] incrementLiveInstanceCount];
         [self computeFrameCacheSizeOptimal];
         
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(liveInstanceCountDidChange:) name:kFLAnimatedImageLifeInstanceCountDidChange object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(liveInstanceCountDidChange:) name:kFLAnimatedImageLiveInstanceCountDidChange object:nil];
         
         // Convenience/minor performance optimization; keep an index set handy with the full range to return in `-frameIndexesToCache`.
         _allFramesIndexSet = [[NSIndexSet alloc] initWithIndexesInRange:NSMakeRange(0, self.frameCount)];
@@ -589,16 +589,16 @@ static NSUInteger _liveInstanceCount = 0;
     return _liveInstanceCount;
 }
 
-+ (void)incrementLifeInstanceCount
++ (void)incrementLiveInstanceCount
 {
     _liveInstanceCount++;
-    [[NSNotificationCenter defaultCenter] postNotificationName:kFLAnimatedImageLifeInstanceCountDidChange object:nil userInfo:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kFLAnimatedImageLiveInstanceCountDidChange object:nil userInfo:nil];
 }
 
 + (void)decrementLiveInstanceCount
 {
     _liveInstanceCount--;
-    [[NSNotificationCenter defaultCenter] postNotificationName:kFLAnimatedImageLifeInstanceCountDidChange object:nil userInfo:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:kFLAnimatedImageLiveInstanceCountDidChange object:nil userInfo:nil];
 }
 
 #pragma mark FLAnimatedImage Notification Handler
