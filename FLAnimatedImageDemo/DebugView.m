@@ -139,7 +139,7 @@
     if (self.frameCacheView.requestedFrameIndex != index) {
         self.frameCacheView.requestedFrameIndex = index;
         
-        NSTimeInterval delayTime = [self.image.delayTimes[index] doubleValue];
+        NSTimeInterval delayTime = [self.image delayTimeAtIndex:index];
         UIView *view = nil;
         if (index < [self.frameCacheView.subviews count]) {
             view = self.frameCacheView.subviews[index];

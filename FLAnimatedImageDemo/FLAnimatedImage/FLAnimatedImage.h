@@ -26,7 +26,7 @@
 
 @property (nonatomic, assign, readonly) NSUInteger loopCount; // 0 means repeating the animation indefinitely
 @property (assign, readonly, getter = isLoopCountComputed) BOOL loopCountComputed;
-@property (nonatomic, strong, readonly) NSArray *delayTimes; // Of type `NSTimeInterval` boxed in `NSNumber`s
+- (float)delayTimeAtIndex:(NSUInteger)index;
 @property (nonatomic, assign, readonly) NSUInteger frameCount; // Number of valid frames; equal to `[.delayTimes count]`
 
 @property (nonatomic, assign, readonly) NSUInteger frameCacheSizeCurrent; // Current size of intelligently chosen buffer window; can range in the interval [1..frameCount]

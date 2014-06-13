@@ -70,7 +70,8 @@
     [self.view addSubview:self.imageView2];
     self.imageView2.frame = CGRectMake(0.0, 577.0, 379.0, 447.0);
     
-    NSURL *url2 = [NSURL URLWithString:@"http://raphaelschaad.com/static/nyan.gif"];
+//    NSURL *url2 = [NSURL URLWithString:@"http://raphaelschaad.com/static/nyan.gif"];
+    NSURL *url2 = [NSURL fileURLWithPath:@"/Users/tim/Downloads/push.gif"];
     NSData *data2 = [NSData dataWithContentsOfURL:url2];
     FLAnimatedImage *animatedImage2 = [[FLAnimatedImage alloc] initWithAnimatedGIFData:data2];
     self.imageView2.animatedImage = animatedImage2;
@@ -84,7 +85,8 @@
     [self.view addSubview:self.imageView3];
     self.imageView3.frame = CGRectMake(389.0, 577.0, 379.0, 447.0);
     
-    NSURL *url3 = [NSURL URLWithString:@"http://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif"];
+//    NSURL *url3 = [NSURL URLWithString:@"http://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif"];
+    NSURL *url3 = [NSURL fileURLWithPath:@"/Users/tim/Downloads/ezgif-save.gif"];
     NSData *data3 = [NSData dataWithContentsOfURL:url3];
     FLAnimatedImage *animatedImage3 = [[FLAnimatedImage alloc] initWithAnimatedGIFData:data3];
     self.imageView3.animatedImage = animatedImage3;

@@ -98,18 +98,18 @@
 
 - (void)updateSubviewFrames
 {
-    NSTimeInterval delayTimesTotal = [[self.image.delayTimes valueForKeyPath:@"@sum.self"] doubleValue];
-    CGFloat x = 0.0;
-    NSUInteger i = 0;
-    for (UIView *subview in self.subviews) {
-        CGFloat width = self.bounds.size.width * [self.image.delayTimes[i] doubleValue] / delayTimesTotal + subview.layer.borderWidth;
-        CGRect frame = CGRectMake(x, 0.0, width, self.bounds.size.height);
-        
-        subview.frame = frame;
-        
-        x += width - subview.layer.borderWidth;
-        i++;
-    }
+//    NSTimeInterval delayTimesTotal = [[self.image.delayTimes valueForKeyPath:@"@sum.self"] doubleValue];
+//    CGFloat x = 0.0;
+//    NSUInteger i = 0;
+//    for (UIView *subview in self.subviews) {
+//        CGFloat width = self.bounds.size.width * [self.image.delayTimes[i] doubleValue] / delayTimesTotal + subview.layer.borderWidth;
+//        CGRect frame = CGRectMake(x, 0.0, width, self.bounds.size.height);
+//        
+//        subview.frame = frame;
+//        
+//        x += width - subview.layer.borderWidth;
+//        i++;
+//    }
 }
 
 
