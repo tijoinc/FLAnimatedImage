@@ -150,6 +150,7 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
 {
     CGImageSourceRef imageSource = CGImageSourceCreateWithData((__bridge CFDataRef)data, NULL);
     self = [self initWithCGImageSource:imageSource overridePosterFrame:nil size:CGSizeZero];
+    CFRelease(imageSource);
     return self;
 }
 
@@ -167,8 +168,6 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
 
 - (instancetype)initWithCGImageSource:(CGImageSourceRef)imageSource overridePosterFrame:(UIImage *)overridePosterFrame size:(CGSize)size
 {
-    CFTimeInterval start = CACurrentMediaTime();
-    
     self = [super init];
     if (self) {
         // Do one-time initializations of `readonly` properties directly to ivar to prevent implicit actions and avoid need for private `readwrite` property overrides.
@@ -180,7 +179,7 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
         _requestedFrameIndexes = [[NSMutableIndexSet alloc] init];
 
         // Note: We could leverage `CGImageSourceCreateWithURL` too to add a second initializer `-initWithAnimatedGIFContentsOfURL:`.
-        _imageSource = imageSource;
+        _imageSource = (CGImageSourceRef)CFRetain(imageSource);
         
         // Early return if not GIF!
         CFStringRef imageSourceContainerType = CGImageSourceGetType(_imageSource);
@@ -190,15 +189,15 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
             return nil;
         }
         
-        CFTimeInterval s1 = CACurrentMediaTime();
         if (overridePosterFrame) {
             _posterImage = overridePosterFrame;
             _size = size;
         } else {
-            _posterImage = [UIImage imageWithCGImage:CGImageSourceCreateImageAtIndex(_imageSource, 0, NULL)];
+            CGImageRef imageRef = CGImageSourceCreateImageAtIndex(_imageSource, 0, NULL);
+            _posterImage = [UIImage imageWithCGImage:imageRef];
+            CGImageRelease(imageRef);
             _size = _posterImage.size;
         }
-        NSLog(@"Inner Took %f", CACurrentMediaTime() - s1);
         _posterImageFrameIndex = 0;
         [_cachedFrameIndexes addIndex:_posterImageFrameIndex];
         [_cachedFrames addObject:_posterImage];
@@ -252,8 +251,6 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didReceiveMemoryWarning:) name:UIApplicationDidReceiveMemoryWarningNotification object:nil];
     }
     
-    NSLog(@"Took %f", CACurrentMediaTime() - start);
-    
     return self;
 }
 
@@ -262,7 +259,7 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         for (NSInteger i = 0; i < self.frameCount; i++) {
             @autoreleasepool {
-                [self delayTimeAtIndex:i isPrecachingCall:YES];
+                [self delayTimeAtIndex:i];
             }
         }
     });
@@ -270,18 +267,10 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
 
 - (float)delayTimeAtIndex:(NSUInteger)index
 {
-    return [self delayTimeAtIndex:index isPrecachingCall:NO];
-}
-
-- (float)delayTimeAtIndex:(NSUInteger)index isPrecachingCall:(BOOL)isPrecachingCall
-{
     NSNumber *delayTime = nil;
         delayTime = [self.delayTimes objectForKey:@(index)];
         
         if (!delayTime) {
-            if (!isPrecachingCall) {
-                NSLog(@"Cache Miss");
-            }
             NSDictionary *frameProperties = (__bridge_transfer NSDictionary *)CGImageSourceCopyPropertiesAtIndex(_imageSource, index, NULL);
             NSDictionary *framePropertiesGIF = [frameProperties objectForKey:(id)kCGImagePropertyGIFDictionary];
 
