@@ -19,6 +19,7 @@
 // Note this is per-instance and not across all FLAnimatedImages, it would probably be best if the 10MB memory footprint was shared across all instances
 // (Meaning if you had 100 FLAnimatedImages the sum of their memory footprints / preloaded frames should not exceed 10MB)
 const CGFloat kFLAnimatedImageIdealMemoryFootprint = 10.0;
+const BOOL kFLAnimatedImageMemoryFootprintIsShared = YES;
 
 NSString *const kFLAnimatedImageLiveInstanceCountDidChange = @"FLAnimatedImageLiveInstanceCountDidChange";
 
@@ -485,7 +486,12 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
 {
     // Calculate the optimal frame cache size by fitting the most number of frames possible into the quota specified by kFLAnimatedImageIdealMemoryFootprint
     CGFloat animatedImageFrameSize = CGImageGetBytesPerRow(self.posterImage.CGImage) * self.size.height / MEGABYTE;
-    CGFloat instanceFootprint = kFLAnimatedImageIdealMemoryFootprint / [[self class] liveInstanceCount];
+    CGFloat instanceFootprint = 0.0;
+    if (kFLAnimatedImageMemoryFootprintIsShared) {
+        instanceFootprint = kFLAnimatedImageIdealMemoryFootprint / [[self class] liveInstanceCount];
+    } else {
+        instanceFootprint = kFLAnimatedImageIdealMemoryFootprint;
+    }
     _frameCacheSizeOptimal = floor(instanceFootprint / animatedImageFrameSize);
     
     // In any case, cap the optimal cache size at the frame count.
