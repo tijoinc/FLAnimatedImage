@@ -41,13 +41,14 @@
 + (CGSize)sizeForImage:(id)image;
 
 // Designated initializer
-- (instancetype)initWithCGImageSource:(CGImageSourceRef)imageSource;
+- (instancetype)initWithCGImageSource:(CGImageSourceRef)imageSource overridePosterFrame:(UIImage *)overridePosterFrame size:(CGSize)size;
 
 // Proxies to -initWithAnimatedGIFData:, mimics method signature for UIImage
 - (instancetype)initWithData:(NSData *)data;
 - (instancetype)initWithAnimatedGIFData:(NSData *)data;
 
 + (instancetype)imageWithContentsOfFile:(NSString *)path;
++ (instancetype)imageWithContentsOfFile:(NSString *)path overridePosterFrame:(UIImage *)overridePosterFrame size:(CGSize)size;
 
 #if DEBUG
 // Only intended to report internal state for debugging
