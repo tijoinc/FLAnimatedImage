@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		22DFB0F2194E62100058AFDF /* earth.gif in Resources */ = {isa = PBXBuildFile; fileRef = 22DFB0F0194E62100058AFDF /* earth.gif */; };
+		22DFB0F3194E62100058AFDF /* nyan.gif in Resources */ = {isa = PBXBuildFile; fileRef = 22DFB0F1194E62100058AFDF /* nyan.gif */; };
 		870D79D51936EBFC009D1BCE /* rock.gif in Resources */ = {isa = PBXBuildFile; fileRef = 870D79D41936EBFC009D1BCE /* rock.gif */; };
 		872EBE70178B825500B7531B /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 872EBE6F178B825500B7531B /* UIKit.framework */; };
 		872EBE72178B825500B7531B /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 872EBE71178B825500B7531B /* Foundation.framework */; };
@@ -29,6 +31,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		22DFB0F0194E62100058AFDF /* earth.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; name = earth.gif; path = "FLAnimatedImageDemo/test-gifs/earth.gif"; sourceTree = SOURCE_ROOT; };
+		22DFB0F1194E62100058AFDF /* nyan.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; name = nyan.gif; path = "FLAnimatedImageDemo/test-gifs/nyan.gif"; sourceTree = SOURCE_ROOT; };
 		870D79D41936EBFC009D1BCE /* rock.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; name = rock.gif; path = "FLAnimatedImageDemo/test-gifs/rock.gif"; sourceTree = SOURCE_ROOT; };
 		872EBE6C178B825500B7531B /* FLAnimatedImageDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FLAnimatedImageDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		872EBE6F178B825500B7531B /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
@@ -161,6 +165,8 @@
 			isa = PBXGroup;
 			children = (
 				870D79D41936EBFC009D1BCE /* rock.gif */,
+				22DFB0F0194E62100058AFDF /* earth.gif */,
+				22DFB0F1194E62100058AFDF /* nyan.gif */,
 			);
 			name = "test-gifs";
 			path = "AnimatedImageDemo/animated-gifs";
@@ -219,6 +225,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				8790E1171935ABDA00459BC1 /* Images.xcassets in Resources */,
+				22DFB0F2194E62100058AFDF /* earth.gif in Resources */,
+				22DFB0F3194E62100058AFDF /* nyan.gif in Resources */,
 				870D79D51936EBFC009D1BCE /* rock.gif in Resources */,
 				87CB5A001935A83900620C16 /* InfoPlist.strings in Resources */,
 			);

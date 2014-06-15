@@ -74,7 +74,7 @@
     [self.view addSubview:self.imageView2];
     self.imageView2.frame = CGRectMake(0.0, CGRectGetMaxY(self.imageView1.frame), CGRectGetWidth(self.view.bounds) / 2.0, CGRectGetMaxY(self.view.bounds) - CGRectGetMaxY(self.imageView1.frame));
     
-    NSURL *url2 = [NSURL URLWithString:@"http://raphaelschaad.com/static/nyan.gif"];
+    NSURL *url2 = [[NSBundle mainBundle] URLForResource:@"nyan" withExtension:@"gif"];
     NSData *data2 = [NSData dataWithContentsOfURL:url2];
     FLAnimatedImage *animatedImage2 = [[FLAnimatedImage alloc] initWithAnimatedGIFData:data2];
     self.imageView2.animatedImage = animatedImage2;
@@ -88,7 +88,7 @@
     [self.view addSubview:self.imageView3];
     self.imageView3.frame = CGRectMake(CGRectGetMaxX(self.imageView2.frame), CGRectGetMaxY(self.imageView1.frame), CGRectGetMaxX(self.view.bounds) - CGRectGetMaxX(self.imageView2.frame), CGRectGetMaxY(self.view.bounds) - CGRectGetMaxY(self.imageView1.frame));
     
-    NSURL *url3 = [NSURL URLWithString:@"http://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif"];
+    NSURL *url3 = [[NSBundle mainBundle] URLForResource:@"earth" withExtension:@"gif"];
     NSData *data3 = [NSData dataWithContentsOfURL:url3];
     FLAnimatedImage *animatedImage3 = [[FLAnimatedImage alloc] initWithAnimatedGIFData:data3];
     self.imageView3.animatedImage = animatedImage3;
