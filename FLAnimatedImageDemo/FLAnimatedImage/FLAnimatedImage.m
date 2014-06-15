@@ -55,6 +55,8 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
 // The actual type of the object is `FLWeakProxy`. Lazily instantiated since it is not typically needed.
 @property (nonatomic, strong, readonly) FLAnimatedImage *weakProxy;
 
+@property (nonatomic, strong, readonly) NSArray *delayTimes; // Of type `NSTimeInterval` boxed in `NSNumber`s
+
 @end
 
 
@@ -325,6 +327,11 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
 
 
 #pragma mark - Public Methods
+
+- (float)delayTimeAtIndex:(NSUInteger)index
+{
+    return [self.delayTimes[index] floatValue];
+}
 
 // See header for more details.
 // Note: both consumer and producer are throttled: consumer by frame timings and producer by the available memory (max buffer window size).
