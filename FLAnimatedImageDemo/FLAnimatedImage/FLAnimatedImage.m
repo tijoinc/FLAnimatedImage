@@ -55,7 +55,7 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
 // The actual type of the object is `FLWeakProxy`. Lazily instantiated since it is not typically needed.
 @property (nonatomic, strong, readonly) FLAnimatedImage *weakProxy;
 
-@property (nonatomic, strong, readonly) NSArray *delayTimes; // Of type `NSTimeInterval` boxed in `NSNumber`s
+@property (nonatomic, strong) NSMutableDictionary *delayTimes; // Of type `NSTimeInterval` boxed in `NSNumber`s
 
 @end
 
@@ -195,7 +195,7 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
         
         // Iterate through frame images
         size_t imageCount = CGImageSourceGetCount(_imageSource);
-        NSMutableArray *delayTimesMutable = [NSMutableArray arrayWithCapacity:imageCount];
+        self.delayTimes = [NSMutableDictionary dictionaryWithCapacity:imageCount];
         for (size_t i = 0; i < imageCount; i++) {
             CGImageRef frameImageRef = CGImageSourceCreateImageAtIndex(_imageSource, i, NULL);
             if (frameImageRef) {
@@ -247,7 +247,7 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
                             delayTime = @(kDelayTimeIntervalDefault);
                         } else {
                             NSLog(@"Verbose: Falling back to preceding delay time for frame %zu %@ because none found in GIF properties %@", i, frameImage, frameProperties);
-                            delayTime = delayTimesMutable[i - 1];
+                            delayTime = self.delayTimes[@(i - 1)];
                         }
                     }
                     // Support frame delays as low as `kDelayTimeIntervalMinimum`, with anything below being rounded up to `kDelayTimeIntervalDefault` for legacy compatibility.
@@ -258,7 +258,7 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
                         NSLog(@"Verbose: Rounding frame %zu's `delayTime` from %f up to default %f (minimum supported: %f).", i, [delayTime floatValue], kDelayTimeIntervalDefault, kDelayTimeIntervalMinimum);
                         delayTime = @(kDelayTimeIntervalDefault);
                     }
-                    delayTimesMutable[i] = delayTime;
+                    self.delayTimes[@(i)] = delayTime;
                 } else {
                     NSLog(@"Verbose: Dropping frame %zu because valid `CGImageRef` %@ did result in `nil`-`UIImage`.", i, frameImageRef);
                 }
@@ -267,7 +267,6 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
                 NSLog(@"Verbose: Dropping frame %zu because failed to `CGImageSourceCreateImageAtIndex` with image source %@", i, _imageSource);
             }
         }
-        _delayTimes = [delayTimesMutable copy];
         _frameCount = [_delayTimes count];
         
         if (self.frameCount == 0) {
@@ -330,7 +329,7 @@ typedef NS_ENUM(NSUInteger, FLAnimatedImageFrameCacheSize) {
 
 - (float)delayTimeAtIndex:(NSUInteger)index
 {
-    return [self.delayTimes[index] floatValue];
+    return [self.delayTimes[@(index)] floatValue];
 }
 
 // See header for more details.
