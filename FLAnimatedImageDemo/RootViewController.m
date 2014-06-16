@@ -63,6 +63,10 @@
     FLAnimatedImage *animatedImage1 = [[FLAnimatedImage alloc] initWithAnimatedGIFData:data1];
     self.imageView1.animatedImage = animatedImage1;
     
+    UITapGestureRecognizer *imageView1TapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
+    [imageView1TapRecognizer setNumberOfTapsRequired:2];
+    [self.imageView1 addGestureRecognizer:imageView1TapRecognizer];
+    
     self.imageView1.frame = CGRectMake(0.0, MAX(CGRectGetMaxY(self.subtitleLabel.frame), CGRectGetMaxY(self.memoryWarningButton.frame)) + 10.0, self.view.bounds.size.width, self.view.bounds.size.width * (animatedImage1.size.height / animatedImage1.size.width));
     
     // 2
@@ -79,6 +83,10 @@
     FLAnimatedImage *animatedImage2 = [[FLAnimatedImage alloc] initWithAnimatedGIFData:data2];
     self.imageView2.animatedImage = animatedImage2;
     
+    UITapGestureRecognizer *imageView2TapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
+    [imageView2TapRecognizer setNumberOfTapsRequired:2];
+    [self.imageView2 addGestureRecognizer:imageView2TapRecognizer];
+    
     // 3
     if (!self.imageView3) {
         self.imageView3 = [[FLAnimatedImageView alloc] init];
@@ -92,6 +100,10 @@
     NSData *data3 = [NSData dataWithContentsOfURL:url3];
     FLAnimatedImage *animatedImage3 = [[FLAnimatedImage alloc] initWithAnimatedGIFData:data3];
     self.imageView3.animatedImage = animatedImage3;
+    
+    UITapGestureRecognizer *imageView3TapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
+    [imageView3TapRecognizer setNumberOfTapsRequired:2];
+    [self.imageView3 addGestureRecognizer:imageView3TapRecognizer];
     
     // ... that's it!
     
@@ -208,6 +220,44 @@
     _debugView3.frame = self.imageView3.bounds;
     
     return _debugView3;
+}
+
+
+#pragma mark - Performance Testing
+
+
+- (void)handleTap:(UITapGestureRecognizer *)recognizer
+{
+    FLAnimatedImageView *view = (FLAnimatedImageView *)recognizer.view;
+    FLAnimatedImage *image = view.animatedImage;
+    NSData *data = image.data;
+    
+    NSUInteger const kPerformanceTestSampleSize = 1000;
+    [[[UIAlertView alloc] initWithTitle:[NSString stringWithFormat:@"%zd Sample Test", kPerformanceTestSampleSize] message:[self testPerformanceOfInitializingAnimatedImageWithData:data sampleSize:kPerformanceTestSampleSize] delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil] show];
+}
+
+
+- (NSString *)testPerformanceOfInitializingAnimatedImageWithData:(NSData *)data sampleSize:(NSUInteger)sampleSize
+{
+    CGFloat firstTime = 0.0;
+    CGFloat totalTime = 0.0;
+    for (NSUInteger i = 0; i < sampleSize; i++) {
+        CFTimeInterval duration = CACurrentMediaTime();
+        FLAnimatedImage *animatedImage = [[FLAnimatedImage alloc] initWithAnimatedGIFData:data];
+#pragma unused(animatedImage)
+        duration = CACurrentMediaTime() - duration;
+        
+        if (i == 0) {
+            firstTime = duration;
+        }
+        totalTime += duration;
+    }
+    
+    CGFloat averageTime = totalTime / sampleSize;
+    
+    NSString *resultString = [NSString stringWithFormat:@"First Load %f Seconds, Average Load %f Seconds", firstTime, averageTime];
+    
+    return resultString;
 }
 
 
