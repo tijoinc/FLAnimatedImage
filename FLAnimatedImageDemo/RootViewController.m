@@ -71,14 +71,8 @@
     self.imageView2.frame = CGRectMake(0.0, 577.0, 379.0, 447.0);
     
     FLAnimatedImage * __block animatedImage2 = nil;
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSURL *url2 = [NSURL URLWithString:@"http://raphaelschaad.com/static/nyan.gif"];
-        NSData *data2 = [NSData dataWithContentsOfURL:url2];
-        animatedImage2 = [[FLAnimatedImage alloc] initWithAnimatedGIFData:data2];
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.imageView2.animatedImage = animatedImage2;
-        });
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        self.imageView2.animatedImage = animatedImage1;
     });
     
     // 3
@@ -91,14 +85,8 @@
     self.imageView3.frame = CGRectMake(389.0, 577.0, 379.0, 447.0);
     
     FLAnimatedImage * __block animatedImage3 = nil;
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSURL *url3 = [NSURL URLWithString:@"http://upload.wikimedia.org/wikipedia/commons/2/2c/Rotating_earth_%28large%29.gif"];
-        NSData *data3 = [NSData dataWithContentsOfURL:url3];
-        animatedImage3 = [[FLAnimatedImage alloc] initWithAnimatedGIFData:data3];
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.imageView3.animatedImage = animatedImage3;
-        });
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        self.imageView3.animatedImage = animatedImage1;
     });
     
     // ... that's it!
